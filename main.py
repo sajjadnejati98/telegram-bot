@@ -1,5 +1,6 @@
 from flask import Flask, request
 from telegram import Bot, Update
+from telegram.ext import Dispatcher, CommandHandler
 import logging
 
 TOKEN = "8208186251:AAHFwFdC5bRJkH8t2V-p7yOk-awOYWuKXAo"
@@ -9,17 +10,26 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.route(f'/{TOKEN}', methods=['POST'])
+# ====== Handler for /start ======
+def start(update, context):
+    update.message.reply_text("سلام! ربات تستی فعال است ✅")
+
+# ====== Dispatcher ======
+dp = Dispatcher(bot, None, workers=0)
+dp.add_handler(CommandHandler("start", start))
+
+# ====== Webhook route ======
+@app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
-    if update.message and update.message.text == "/start":
-        chat_id = update.message.chat.id
-        bot.send_message(chat_id=chat_id, text="سلام! ربات تستی فعال است ✅")
+    dp.process_update(update)
     return "OK"
 
-@app.route("/", methods=['GET'])
+# ====== Ping route ======
+@app.route("/", methods=["GET"])
 def index():
     return "Bot is alive ✅"
 
+# ====== Run Flask ======
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
