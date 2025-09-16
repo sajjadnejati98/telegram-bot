@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
 Full Unix Glass Calculation Telegram Bot
-Compatible with python-telegram-bot 22.3
+Webhook version for Render Free Tier
 """
 
 import logging
-import threading
 import os
-from flask import Flask
-from telegram import Update
+from flask import Flask, request
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
     ConversationHandler, ContextTypes, filters
@@ -35,7 +34,6 @@ GLUE_DATA = {
 
 # ======= شروع ربات =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     keyboard = [[InlineKeyboardButton("تکمیل اطلاعات", callback_data='fill_info')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -96,7 +94,6 @@ async def get_thickness(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_depth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['depth'] = float(update.message.text)
-        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
         keyboard = [
             [InlineKeyboardButton("چسب سیلیکون 2جزئی استراکچر 881", callback_data='881')],
             [InlineKeyboardButton("چسب سیلیکون 2جزئی 882", callback_data='882')]
@@ -141,42 +138,41 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ======= Flask Ping برای Render =======
-app_flask = Flask(__name__)
-@app_flask.route('/')
+app = Flask(__name__)
+
+@app.route('/')
 def ping():
     return "OK"
 
-def run_flask():
-    port = int(os.environ.get("PORT", 8000))
-    app_flask.run(host='0.0.0.0', port=port)
-
 # ======= ساخت اپلیکیشن ربات =======
-def run_bot():
-    app = ApplicationBuilder().token(TOKEN).build()
+bot_app = ApplicationBuilder().token(TOKEN).build()
 
-    # ======= لغو Webhookهای قبلی =======
-    app.bot.delete_webhook()
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
+    states={
+        ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
+        AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
+        COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
+        THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
+        DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
+        GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
+    allow_reentry=True
+)
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
-        states={
-            ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
-            AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
-            COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
-            THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
-            DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
-            GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-        allow_reentry=True
-    )
+bot_app.add_handler(conv_handler)
 
-    app.add_handler(conv_handler)
+# ======= Webhook endpoint =======
+@app.route(f"/{TOKEN}", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), bot_app.bot)
+    bot_app.update_queue.put(update)
+    return "OK"
 
-    print("✅ ربات یونکس روشن شد...")
-    app.run_polling()
-
-# ======= اجرای همزمان Flask و Bot =======
+# ======= اجرای سرویس =======
 if __name__ == "__main__":
-    threading.Thread(target=run_flask).start()
-    run_bot()
+    import threading
+    port = int(os.environ.get("PORT", 8000))
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port)).start()
+    print("✅ ربات یونکس آماده است (Webhook)")
