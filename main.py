@@ -4,25 +4,19 @@ from telegram.ext import (
     MessageHandler, filters, ContextTypes, ConversationHandler
 )
 
-# =========================
 # توکن ربات
-# =========================
 TOKEN = "8208186251:AAHFwFdC5bRJkH8t2V-p7yOk-awOYWuKXAo"
 
-# مراحل مکالمه
+# مراحل محاسبه
 FIRST_NUMBER, OPERATION, SECOND_NUMBER = range(3)
 
 
-# -------------------------
-# استارت
-# -------------------------
+# ===== /start =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("سلام 👋\nمن آماده‌ام. برای شروع محاسبه دستور /calc رو بزن.")
+    await update.message.reply_text("سلام 👋\nمن روشنم ✅ برای شروع محاسبه دستور /calc رو بزن.")
 
 
-# -------------------------
-# شروع محاسبه
-# -------------------------
+# ===== شروع محاسبه =====
 async def calc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("عدد اول رو وارد کن:")
     return FIRST_NUMBER
@@ -35,7 +29,6 @@ async def first_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ لطفاً یک عدد معتبر وارد کن.")
         return FIRST_NUMBER
 
-    # انتخاب عمل
     keyboard = [
         [
             InlineKeyboardButton("➕ جمع", callback_data="add"),
@@ -89,24 +82,18 @@ async def second_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# -------------------------
-# کنسل
-# -------------------------
+# ===== کنسل =====
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("محاسبه لغو شد ❌")
     return ConversationHandler.END
 
 
-# -------------------------
-# ران اصلی
-# -------------------------
+# ===== ران اصلی =====
 def main():
     app = Application.builder().token(TOKEN).build()
 
-    # دستور استارت
     app.add_handler(CommandHandler("start", start))
 
-    # محاسبه با مکالمه
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("calc", calc)],
         states={
