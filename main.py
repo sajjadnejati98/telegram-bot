@@ -8,8 +8,8 @@ import logging
 from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import (
-    Dispatcher, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ConversationHandler, filters
+    ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
+    ConversationHandler, filters, ContextTypes
 )
 
 # ======= توکن ربات =======
@@ -33,12 +33,12 @@ GLUE_DATA = {
     "882": {"volume": 209, "weight": 319}
 }
 
-# ======= Telegram Bot =======
+# ======= Telegram Bot Application =======
 bot = Bot(TOKEN)
-dispatcher = Dispatcher(bot, None, workers=0, use_context=True)
+app_telegram = ApplicationBuilder().token(TOKEN).build()
 
 # ======= Handlers =======
-async def start(update: Update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("تکمیل اطلاعات", callback_data='fill_info')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -47,7 +47,7 @@ async def start(update: Update, context):
         reply_markup=reply_markup
     )
 
-async def button(update: Update, context):
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == 'fill_info':
@@ -58,7 +58,7 @@ async def button(update: Update, context):
         await show_results(update, context)
         return ConversationHandler.END
 
-async def get_env(update: Update, context):
+async def get_env(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['env'] = float(update.message.text)
         await update.message.reply_text("2- مساحت شیشه ها را وارد کنید (مترمربع):")
@@ -67,7 +67,7 @@ async def get_env(update: Update, context):
         await update.message.reply_text("لطفاً عدد معتبر وارد کنید.")
         return ENV
 
-async def get_area(update: Update, context):
+async def get_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['area'] = float(update.message.text)
         await update.message.reply_text("3- تعداد کل شیشه ها را وارد کنید:")
@@ -76,7 +76,7 @@ async def get_area(update: Update, context):
         await update.message.reply_text("لطفاً عدد معتبر وارد کنید.")
         return AREA
 
-async def get_count(update: Update, context):
+async def get_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['count'] = int(update.message.text)
         await update.message.reply_text("4- ضخامت اسپیسر را وارد کنید (میلیمتر):")
@@ -85,7 +85,7 @@ async def get_count(update: Update, context):
         await update.message.reply_text("لطفاً عدد معتبر وارد کنید.")
         return COUNT
 
-async def get_thickness(update: Update, context):
+async def get_thickness(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['thickness'] = float(update.message.text)
         await update.message.reply_text("5- عمق چسب زنی را وارد کنید (میلیمتر):")
@@ -94,7 +94,7 @@ async def get_thickness(update: Update, context):
         await update.message.reply_text("لطفاً عدد معتبر وارد کنید.")
         return THICKNESS
 
-async def get_depth(update: Update, context):
+async def get_depth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['depth'] = float(update.message.text)
         keyboard = [
@@ -108,7 +108,7 @@ async def get_depth(update: Update, context):
         await update.message.reply_text("لطفاً عدد معتبر وارد کنید.")
         return DEPTH
 
-async def show_results(update: Update, context):
+async def show_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = context.user_data
     env = data['env']
     area = data['area']
@@ -133,7 +133,7 @@ async def show_results(update: Update, context):
         f"5- اسپیسر مصرفی: {spacer:.2f} متر"
     )
 
-async def cancel(update: Update, context):
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ عملیات لغو شد.")
     return ConversationHandler.END
 
@@ -151,16 +151,13 @@ conv_handler = ConversationHandler(
     fallbacks=[CommandHandler('cancel', cancel)],
     allow_reentry=True
 )
-dispatcher.add_handler(conv_handler)
+app_telegram.add_handler(conv_handler)
 
 # ======= Flask Route for Webhook =======
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
-    from telegram import Update
-    import asyncio
-
     update = Update.de_json(request.get_json(force=True), bot)
-    asyncio.run(dispatcher.process_update(update))
+    app_telegram.update_queue.put_nowait(update)
     return "OK"
 
 # ======= Flask Ping Route =======
