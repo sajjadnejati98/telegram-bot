@@ -1,12 +1,14 @@
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler
 
-TOKEN = "توکن_اینجا"
+# ✅ توکن واقعی از BotFather
+TOKEN = "8208186251:AAE8HhwgpbGnawNcruZNzVHy-mSPqL5L2Bc"
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("سلام 👋 ربات دوباره فعاله ✅")
+app = Application.builder().token(TOKEN).build()
 
-if __name__ == "__main__":
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.run_polling()
+async def start(update, context):
+    await update.message.reply_text("ربات روشنه ✅")
+
+app.add_handler(CommandHandler("start", start))
+
+print("ربات Polling آماده است...")
+app.run_polling()
