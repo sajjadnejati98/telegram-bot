@@ -8,7 +8,7 @@ import logging
 import threading
 import os
 from flask import Flask
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
     ConversationHandler, ContextTypes, filters
@@ -35,6 +35,7 @@ GLUE_DATA = {
 
 # ======= شروع ربات =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     keyboard = [[InlineKeyboardButton("تکمیل اطلاعات", callback_data='fill_info')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -95,6 +96,7 @@ async def get_thickness(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_depth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['depth'] = float(update.message.text)
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
         keyboard = [
             [InlineKeyboardButton("چسب سیلیکون 2جزئی استراکچر 881", callback_data='881')],
             [InlineKeyboardButton("چسب سیلیکون 2جزئی 882", callback_data='882')]
@@ -151,6 +153,9 @@ def run_flask():
 # ======= ساخت اپلیکیشن ربات =======
 def run_bot():
     app = ApplicationBuilder().token(TOKEN).build()
+
+    # ======= لغو Webhookهای قبلی =======
+    app.bot.delete_webhook()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
