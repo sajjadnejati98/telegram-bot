@@ -12,6 +12,7 @@ if not TOKEN:
 bot = Bot(token=TOKEN)
 app = Flask(__name__)
 
+# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
