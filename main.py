@@ -1,34 +1,26 @@
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 import os
-from threading import Thread
-from flask import Flask
-from telegram import Bot
-from telegram.ext import Updater, CommandHandler
 
-# ====== Flask app برای Ping UptimeRobot ======
-app = Flask(__name__)
+# ====== توکن ربات ======
+TOKEN = os.environ.get("TOKEN")  # یا مستقیماً بنویس "توکن_ربات"
 
-@app.route('/')
-def home():
-    return 'OK'
+# ====== دستور /start ======
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("سلام! ربات فعاله ✅")
 
-def run_flask():
-    app.run(host='0.0.0.0', port=8000)
+# ====== تابع اصلی ربات ======
+def main():
+    # ساخت اپلیکیشن
+    app = Application.builder().token(TOKEN).build()
 
-# اجرای Flask در Thread جداگانه
-Thread(target=run_flask).start()
+    # اضافه کردن هندلر دستور /start
+    app.add_handler(CommandHandler("start", start))
 
-# ====== کد ربات تلگرام ======
-TOKEN = os.environ.get("TOKEN")  # توکن ربات از Environment Variable
+    print("ربات روشن شد ...")
+    # شروع Polling
+    app.run_polling()
 
-updater = Updater(TOKEN, use_context=True)
-dispatcher = updater.dispatcher
-
-# مثال ساده: دستور /start
-def start(update, context):
-    update.message.reply_text('سلام! ربات تست روشنه.')
-
-dispatcher.add_handler(CommandHandler('start', start))
-
-# شروع ربات
-updater.start_polling()
-updater.idle()
+# ====== اجرای ربات ======
+if __name__ == "__main__":
+    main()
