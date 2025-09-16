@@ -1,7 +1,7 @@
 from telegram.ext import Application, CommandHandler
 
 # ✅ توکن واقعی از BotFather
-TOKEN = "8208186251:AAE8HhwgpbGnawNcruZNzVHy-mSPqL5L2Bc"
+TOKEN = "8208186251:AAHFwFdC5bRJkH8t2V-p7yOk-awOYWuKXAo"
 
 app = Application.builder().token(TOKEN).build()
 
