@@ -5,6 +5,9 @@ Compatible with python-telegram-bot 22.3
 """
 
 import logging
+import threading
+import os
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
@@ -12,7 +15,8 @@ from telegram.ext import (
 )
 
 # ======= توکن ربات =======
-TOKEN = os.environ.get("TOKEN")  # یا مستقیماً بنویس "توکن_ربات"
+TOKEN = os.environ.get("TOKEN") or "توکن_ربات_اینجا"
+
 # ======= Logging =======
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -112,11 +116,8 @@ async def show_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     depth = data['depth']
     glue = data['glue_choice']
 
-    # خروجی‌ها
     volume_glue = (env * thickness * depth) / 1000
     glue_info = GLUE_DATA[glue]
-
-    # 🔹 فرمول اصلاح‌شده وزن چسب
     weight_glue = (volume_glue / glue_info['volume']) * glue_info['weight']
 
     butyl = (env * 2 * 5.5) / 1000
@@ -137,24 +138,40 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ عملیات لغو شد.")
     return ConversationHandler.END
 
-# ======= ساخت اپلیکیشن =======
-app = ApplicationBuilder().token(TOKEN).build()
+# ======= Flask Ping برای Render =======
+app_flask = Flask(__name__)
+@app_flask.route('/')
+def ping():
+    return "OK"
 
-conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
-    states={
-        ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
-        AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
-        COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
-        THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
-        DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
-        GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
-    },
-    fallbacks=[CommandHandler('cancel', cancel)],
-    allow_reentry=True
-)
+def run_flask():
+    port = int(os.environ.get("PORT", 8000))
+    app_flask.run(host='0.0.0.0', port=port)
 
-app.add_handler(conv_handler)
+# ======= ساخت اپلیکیشن ربات =======
+def run_bot():
+    app = ApplicationBuilder().token(TOKEN).build()
 
-print("✅ ربات یونکس روشن شد...")
-app.run_polling()
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
+        states={
+            ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
+            AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
+            COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
+            THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
+            DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
+            GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+        allow_reentry=True
+    )
+
+    app.add_handler(conv_handler)
+
+    print("✅ ربات یونکس روشن شد...")
+    app.run_polling()
+
+# ======= اجرای همزمان Flask و Bot =======
+if __name__ == "__main__":
+    threading.Thread(target=run_flask).start()
+    run_bot()
