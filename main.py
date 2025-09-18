@@ -1,16 +1,13 @@
-import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# گرفتن توکن از Environment (نه داخل کد)
-TOKEN = os.getenv("BOT_TOKEN")
+# ====== توکن ربات ======
+TOKEN = "8208186251:AAGzIFLj64SmUCChEMHMyziZay5rd93X6Ns"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ربات فعال است ✅")
+    await update.message.reply_text("✅ ربات فعال است و درست کار می‌کند.")
 
 def main():
-    if not TOKEN:
-        raise ValueError("❌ BOT_TOKEN تنظیم نشده یا مقدارش خالیه.")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
 
