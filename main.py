@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
 Full Unix Glass Calculation Telegram Bot
-Compatible with python-telegram-bot 22.3
+با پاکسازی خودکار webhook قبلی قبل از polling
 """
 
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
     ConversationHandler, ContextTypes, filters
 )
 
 # ======= توکن ربات =======
-TOKEN = "8208186251:AAGhImACKTeAa1pKT1cVSQEsqp0Vo2yk-2o"
+TOKEN = "8208186251:AAHFwFdC5bRJkH8t2V-p7yOk-awOYWuKXAo"
 
 # ======= Logging =======
 logging.basicConfig(
@@ -36,7 +36,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         "سلام ، به ربات هوشمند یونکس خوش آمدید\n"
-        "جهت محاسبه متریال مصرفی در تولید شیشه دو جداره، اطلاعات را تکمیل کنید.",
+        "جهت محاسبه متریال مصرفی استفاده شده در تولید شیشه 2جداره خود اطلاعات را تکمیل کنید.",
         reply_markup=reply_markup
     )
 
@@ -45,7 +45,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == 'fill_info':
-        await query.message.reply_text("1- محیط کل شیشه‌ها را وارد کنید (متر):")
+        await query.message.reply_text("1- محیط کل شیشه ها را وارد کنید (متر):")
         return ENV
     elif query.data in ["881", "882"]:
         context.user_data['glue_choice'] = query.data
@@ -56,7 +56,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_env(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['env'] = float(update.message.text)
-        await update.message.reply_text("2- مساحت شیشه‌ها را وارد کنید (مترمربع):")
+        await update.message.reply_text("2- مساحت شیشه ها را وارد کنید (مترمربع):")
         return AREA
     except ValueError:
         await update.message.reply_text("لطفاً عدد معتبر وارد کنید.")
@@ -65,7 +65,7 @@ async def get_env(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['area'] = float(update.message.text)
-        await update.message.reply_text("3- تعداد کل شیشه‌ها را وارد کنید:")
+        await update.message.reply_text("3- تعداد کل شیشه ها را وارد کنید:")
         return COUNT
     except ValueError:
         await update.message.reply_text("لطفاً عدد معتبر وارد کنید.")
@@ -113,7 +113,6 @@ async def show_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     depth = data['depth']
     glue = data['glue_choice']
 
-    # محاسبات
     volume_glue = (env * thickness * depth) / 1000
     glue_info = GLUE_DATA[glue]
     weight_glue = (volume_glue / glue_info['volume']) * glue_info['weight']
@@ -136,28 +135,28 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ عملیات لغو شد.")
     return ConversationHandler.END
 
-# ======= ساخت اپلیکیشن و هندلرها =======
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+# ======= پاکسازی webhook قبلی =======
+bot = Bot(TOKEN)
+bot.delete_webhook()  # حذف webhook قبل از شروع polling
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
-        states={
-            ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
-            AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
-            COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
-            THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
-            DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
-            GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-        allow_reentry=True
-    )
+# ======= ساخت اپلیکیشن =======
+app = ApplicationBuilder().token(TOKEN).build()
 
-    app.add_handler(conv_handler)
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
+    states={
+        ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
+        AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
+        COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
+        THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
+        DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
+        GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
+    allow_reentry=True
+)
 
-    print("✅ ربات یونکس روشن شد...")
-    app.run_polling()  # بدون asyncio.run()
+app.add_handler(conv_handler)
 
-if __name__ == "__main__":
-    main()
+print("✅ ربات یونکس روشن شد و webhook قبلی پاک شد...")
+app.run_polling()
