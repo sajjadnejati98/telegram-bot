@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 
 # ======= توکن ربات =======
-TOKEN = "8208186251:AAHFwFdC5bRJkH8t2V-p7yOk-awOYWuKXAo"
+TOKEN = "8208186251:AAGhImACKTeAa1pKT1cVSQEsqp0Vo2yk-2o"
 
 # ======= Logging =======
 logging.basicConfig(
@@ -160,3 +160,4 @@ app.add_handler(conv_handler)
 
 print("✅ ربات یونکس روشن شد و webhook قبلی پاک شد...")
 app.run_polling()
+
