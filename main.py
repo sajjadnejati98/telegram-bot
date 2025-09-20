@@ -1,18 +1,19 @@
-import os
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
+import asyncio
 
-TOKEN = os.environ.get("TOKEN", "").strip()
-
-if not TOKEN:
-    raise ValueError("توکن پیدا نشد!")
+TOKEN = "8208186251:AAGhImACKTeAa1pKT1cVSQEsqp0Vo2yk-2o"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ربات روشنه ✅")
+    await update.message.reply_text("ربات فعال است ✅")
 
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("start", start))
+async def main():
+    app = Application.builder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+
+    print("🚀 Bot is starting...")
+    await app.run_polling()
 
 if __name__ == "__main__":
-    print("🚀 Bot is starting...")
-    app.run_polling()
+    asyncio.run(main())
