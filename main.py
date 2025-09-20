@@ -10,6 +10,7 @@ from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
     ConversationHandler, ContextTypes, filters
 )
+import asyncio
 
 # ======= توکن ربات =======
 TOKEN = "8208186251:AAGhImACKTeAa1pKT1cVSQEsqp0Vo2yk-2o"
@@ -135,29 +136,31 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ عملیات لغو شد.")
     return ConversationHandler.END
 
-# ======= پاکسازی webhook قبلی =======
-bot = Bot(TOKEN)
-bot.delete_webhook()  # حذف webhook قبل از شروع polling
+# ======= اجرای پاکسازی webhook و اپلیکیشن =======
+async def main():
+    bot = Bot(TOKEN)
+    await bot.delete_webhook()  # حذف webhook قبل از شروع polling
 
-# ======= ساخت اپلیکیشن =======
-app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).build()
 
-conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
-    states={
-        ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
-        AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
-        COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
-        THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
-        DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
-        GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
-    },
-    fallbacks=[CommandHandler('cancel', cancel)],
-    allow_reentry=True
-)
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
+        states={
+            ENV: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_env)],
+            AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_area)],
+            COUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_count)],
+            THICKNESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_thickness)],
+            DEPTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_depth)],
+            GLUE_CHOICE: [CallbackQueryHandler(button, pattern='^(881|882)$')]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+        allow_reentry=True
+    )
 
-app.add_handler(conv_handler)
+    app.add_handler(conv_handler)
 
-print("✅ ربات یونکس روشن شد و webhook قبلی پاک شد...")
-app.run_polling()
+    print("✅ ربات یونکس روشن شد و webhook قبلی پاک شد...")
+    await app.run_polling()
 
+if __name__ == '__main__':
+    asyncio.run(main())
