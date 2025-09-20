@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Full Unix Glass Calculation Telegram Bot
-نسخه نهایی با پاکسازی async webhook و polling پایدار
+Unix Glass Calculation Telegram Bot
+نسخه نهایی با polling پایدار و پاکسازی webhook
 """
 
 import logging
@@ -37,7 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         "سلام ، به ربات هوشمند یونکس خوش آمدید\n"
-        "جهت محاسبه متریال مصرفی استفاده شده در تولید شیشه 2جداره خود اطلاعات را تکمیل کنید.",
+        "جهت محاسبه متریال مصرفی شیشه دو جداره، اطلاعات را تکمیل کنید.",
         reply_markup=reply_markup
     )
 
@@ -94,8 +94,8 @@ async def get_depth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['depth'] = float(update.message.text)
         keyboard = [
-            [InlineKeyboardButton("چسب سیلیکون 2جزئی استراکچر 881", callback_data='881')],
-            [InlineKeyboardButton("چسب سیلیکون 2جزئی 882", callback_data='882')]
+            [InlineKeyboardButton("چسب 881", callback_data='881')],
+            [InlineKeyboardButton("چسب 882", callback_data='882')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("چسب مصرفی خود را انتخاب کنید:", reply_markup=reply_markup)
@@ -139,8 +139,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ======= اجرای اصلی =======
 async def main():
     bot = Bot(TOKEN)
-    # پاکسازی async webhook قبل از شروع polling
-    await bot.delete_webhook()
+    await bot.delete_webhook()  # پاکسازی webhook
 
     app = ApplicationBuilder().token(TOKEN).build()
 
