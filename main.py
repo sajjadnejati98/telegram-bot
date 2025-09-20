@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 Full Unix Glass Calculation Telegram Bot
-نسخه نهایی با پاکسازی خودکار webhook و بدون ارور asyncio
+نسخه نهایی با پاکسازی async webhook و polling پایدار
 """
 
 import logging
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
@@ -135,16 +136,14 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ عملیات لغو شد.")
     return ConversationHandler.END
 
-# ======= Entry Point =======
-if __name__ == "__main__":
-    # پاکسازی webhook قبلی
+# ======= اجرای اصلی =======
+async def main():
     bot = Bot(TOKEN)
-    bot.delete_webhook()
+    # پاکسازی async webhook قبل از شروع polling
+    await bot.delete_webhook()
 
-    # ساخت اپلیکیشن
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # تعریف ConversationHandler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start), CallbackQueryHandler(button)],
         states={
@@ -162,4 +161,7 @@ if __name__ == "__main__":
     app.add_handler(conv_handler)
 
     print("✅ ربات یونکس روشن شد و webhook قبلی پاک شد...")
-    app.run_polling()
+    await app.run_polling()
+
+if __name__ == '__main__':
+    asyncio.run(main())
